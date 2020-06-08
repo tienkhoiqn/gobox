@@ -1,7 +1,6 @@
 package gobox
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/tpphu/gobox/logger"
@@ -9,63 +8,92 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// App is interface of gobox
-type App interface {
-	// Inject Env
-	Load()
-	Help()
-	Migrate()
-	Seed()
-	Up()
-	Down()
-}
-
-type application struct {
+// App is main application of gobox
+type App struct {
 	cli.App
 	Provider provider.Provider
 	Log      *logger.Logger
 }
 
-func (a *application) Load() {
+type Option func(a *App)
+
+func Name(name string) Option {
+	return func(a *App) {
+		a.Name = name
+	}
+}
+
+func (a *App) Load() {
 
 }
 
-func (a *application) Up() {
+func (a *App) Run() {
+	a.App.Run(os.Args)
+}
+
+func (a *App) up(ctx *cli.Context) error {
 	a.Log.Info("Application is up")
-	a.Run(os.Args)
+	return nil
 }
 
-func (a *application) Down() {
-
+func (a *App) down(ctx *cli.Context) error {
+	a.Log.Info("Application is down")
+	return nil
 }
 
-func (a *application) Seed() {
-
+func (a *App) seed(ctx *cli.Context) error {
+	a.Log.Info("Application is seeding data")
+	return nil
 }
 
-func (a *application) Migrate() {
-
+func (a *App) migrate(ctx *cli.Context) error {
+	a.Log.Info("Application is migrating schema")
+	return nil
 }
 
-func (a *application) Help() {
-
-}
-
-func Default() App {
-	fmt.Println("test")
-	app := application{
+func NewApp(opts ...Option) *App {
+	log := logger.New()
+	log.Out = os.Stdout
+	var app *App
+	app = &App{
 		App: cli.App{
-			Name:  "greet",
-			Usage: "say a greeting",
-			Action: func(c *cli.Context) error {
-				fmt.Println("Greetings")
-				return nil
+			Name:                 "gobox",
+			Usage:                "a simple gobox application",
+			EnableBashCompletion: true,
+			Commands: []*cli.Command{
+				{
+					Name:  "up",
+					Usage: "Up application",
+					Action: func(c *cli.Context) error {
+						return app.up(c)
+					},
+				},
+				{
+					Name:  "down",
+					Usage: "Down application",
+					Action: func(c *cli.Context) error {
+						return app.down(c)
+					},
+				},
+				{
+					Name:  "seed",
+					Usage: "Seed data for application",
+					Action: func(c *cli.Context) error {
+						return app.seed(c)
+					},
+				},
+				{
+					Name:  "migrate",
+					Usage: "Migrate data for application",
+					Action: func(c *cli.Context) error {
+						return app.migrate(c)
+					},
+				},
 			},
 		},
 		Provider: provider.NewProvider(),
-		Log:      logger.New(),
+		Log:      log,
 	}
-	app.Log.Out = os.Stdout
-	
-	return &app
+	opts[0](app)
+	return app
 }
