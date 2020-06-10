@@ -5,14 +5,18 @@ import (
 
 	"github.com/tpphu/gobox/logger"
 	"github.com/tpphu/gobox/provider"
+	"github.com/tpphu/gobox/service"
+	"github.com/tpphu/gobox/service/http"
 	"github.com/urfave/cli/v2"
 )
 
 // App is main application of gobox
 type App struct {
 	cli.App
-	Provider provider.Provider
-	Log      *logger.Logger
+	httpService *http.Http
+	Services    []service.Runable
+	Provider    provider.Provider
+	Log         *logger.Logger
 }
 
 type Option func(a *App)
@@ -23,12 +27,32 @@ func Name(name string) Option {
 	}
 }
 
-func (a *App) Load() {
+func Description(desc string) Option {
+	return func(a *App) {
+		a.Description = desc
+	}
+}
+
+func WithHTTPService(address string) Option {
+	return func(a *App) {
+		a.httpService = http.Default(http.Address(address))
+	}
+}
+
+func (a *App) Init() {
 
 }
 
 func (a *App) Run() {
 	a.App.Run(os.Args)
+	if a.httpService != nil {
+		a.httpService.Init()
+		a.httpService.Run()
+	}
+}
+
+func (a *App) AddService(s service.Runable) {
+	a.Services = append(a.Services, s)
 }
 
 func (a *App) up(ctx *cli.Context) error {
@@ -94,6 +118,8 @@ func NewApp(opts ...Option) *App {
 		Provider: provider.NewProvider(),
 		Log:      log,
 	}
-	opts[0](app)
+	for _, opt := range opts {
+		opt(app)
+	}
 	return app
 }

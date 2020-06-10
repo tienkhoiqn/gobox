@@ -5,7 +5,9 @@ import (
 )
 
 func main() {
-	app := gobox.NewApp(gobox.Name("test"))
+	app := gobox.NewApp(
+		gobox.Name("test"),
+		gobox.WithHTTPService(":3000"))
 	app.Description = "test"
 	app.Run()
 }
