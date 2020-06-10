@@ -40,13 +40,14 @@ func WithHTTPService(address string) Option {
 }
 
 func (a *App) Init() {
-
+	if a.httpService != nil {
+		a.httpService.Init()
+	}
 }
 
 func (a *App) Run() {
 	a.App.Run(os.Args)
 	if a.httpService != nil {
-		a.httpService.Init()
 		a.httpService.Run()
 	}
 }
